@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Radio Quiz App</title>
+    <style>
+        /* ==========================================================================
+           CSS STYLES (Handles the look, feel, and modern layout)
+           ========================================================================== */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: #f0f2f5;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            color: #333;
+            padding: 20px;
+        }
+
+        /* Main Card Container */
+        .quiz-container {
+            background: #ffffff;
+            width: 100%;
+            max-width: 650px;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+        }
+
+        /* Screen visibility handling */
+        .screen {
+            display: none;
+        }
+
+        .screen.active {
+            display: block;
+            animation: fadeIn 0.4s ease-in-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Headers & Typography */
+        h1 {
+            font-size: 26px;
+            margin-bottom: 15px;
+            color: #1a73e8;
+            text-align: center;
+        }
+
+        h2 {
+            font-size: 20px;
+            margin-bottom: 25px;
+            line-height: 1.4;
+        }
+
+        p {
+            color: #666;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 16px;
+        }
+
+        /* Progress Indicator */
+        .progress {
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #888;
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+
+        /* Custom MCQ Option Selectors */
+        .options-container {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-bottom: 30px;
+        }
+
+        .option-label {
+            display: flex;
+            align-items: center;
+            background: #f8f9fa;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 14px 20px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            position: relative;
+        }
+
+        .option-label:hover:not(.disabled) {
+            background: #f1f3f4;
+            border-color: #bdc1c6;
+        }
+
+        .option-label.disabled {
+            cursor: not-allowed;
+        }
+
+        /* Hide default radio circle */
+        .option-label input[type="radio"] {
+            display: none;
+        }
+
+        /* Custom text identifier (A, B, C, D styling) */
+        .custom-radio {
+            display: inline-block;
+            width: 28px;
+            height: 28px;
+            background: #fff;
+            border: 2px solid #bdc1c6;
+            border-radius: 50%;
+            text-align: center;
+            line-height: 24px;
+            font-weight: bold;
+            font-size: 13px;
+            margin-right: 15px;
+            color: #5f6368;
+            flex-shrink: 0;
+        }
+
+        /* Live Feedback Utility States */
+        .option-label.correct-glow {
+            background: #e6f4ea !important;
+            border-color: #137333 !important;
+            color: #137333 !important;
+        }
+        .option-label.correct-glow .custom-radio {
+            background: #137333 !important;
+            border-color: #137333 !important;
+            color: #fff !important;
+        }
+
+        .option-label.wrong-glow {
+            background: #fce8e6 !important;
+            border-color: #c5221f !important;
+            color: #c5221f !important;
+        }
+        .option-label.wrong-glow .custom-radio {
+            background: #c5221f !important;
+            border-color: #c5221f !important;
+            color: #fff !important;
+        }
+
+        /* Action Buttons */
+        .btn {
+            display: block;
+            width: 100%;
+            background: #1a73e8;
+            color: white;
+            border: none;
+            padding: 14px;
+            font-size: 16px;
+            font-weight: bold;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.2s;
+            margin-bottom: 12px;
+        }
+
+        .btn:hover {
+            background: #1557b0;
+        }
+
+        .btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .btn-secondary {
+            background: #5f6368;
+        }
+        .btn-secondary:hover {
+            background: #474a4d;
+        }
+
+        /* Summary Box on Thanks Screen */
+        .score-display {
+            background: #e8f0fe;
+            color: #1a73e8;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+            font-weight: bold;
+            font-size: 22px;
+            margin-bottom: 25px;
+            border: 1px solid #1a73e8;
+        }
+
+        /* Review Screen Styles */
+        .review-scroll-area {
+            max-height: 60vh;
+            overflow-y: auto;
+            margin-bottom: 25px;
+            padding-right: 10px;
+        }
+
+        .review-item {
+            background: #ffffff;
+            border: 1px solid #dadce0;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+
+        .review-question {
+            font-weight: bold;
+            font-size: 16px;
+            margin-bottom: 12px;
+            color: #202124;
+        }
+
+        .review-option {
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            font-size: 14px;
+            background: #f8f9fa;
+            border: 2px solid #e0e0e0;
+            display: flex;
+            align-items: center;
+        }
+
+        .review-option-badge {
+            font-weight: bold;
+            margin-right: 10px;
+            width: 20px;
+        }
+
+        /* Shapes around selections on review page */
+        .review-correct {
+            background: #e6f4ea;
+            border-color: #137333;
+            color: #137333;
+            font-weight: 500;
+        }
+
+        .review-wrong {
+            background: #fce8e6;
+            border-color: #c5221f;
+            color: #c5221f;
+            font-weight: 500;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="quiz-container">
+        
+        <div id="welcome-screen" class="screen active">
+            <h1>Amateur Radio</h1>
+            <p>This exam consists of 21 questions. Click below to begin.</p>
+            <button id="start-btn" class="btn">Start Quiz</button>
+        </div>
+
+        <div id="quiz-screen" class="screen">
+            <div class="progress">Question <span id="current-question-num">1</span> of <span id="total-questions-num">21</span></div>
+            
+            <h2 id="question-text">Loading question...</h2>
+            
+            <div class="options-container">
+                <label class="option-label" id="lbl-a">
+                    <input type="radio" name="quiz-option" value="a">
+                    <span class="custom-radio">A</span>
+                    <span id="opt-a-text">Option A</span>
+                </label>
+                
+                <label class="option-label" id="lbl-b">
+                    <input type="radio" name="quiz-option" value="b">
+                    <span class="custom-radio">B</span>
+                    <span id="opt-b-text">Option B</span>
+                </label>
+                
+                <label class="option-label" id="lbl-c">
+                    <input type="radio" name="quiz-option" value="c">
+                    <span class="custom-radio">C</span>
+                    <span id="opt-c-text">Option C</span>
+                </label>
+                
+                <label class="option-label" id="lbl-d">
+                    <input type="radio" name="quiz-option" value="d">
+                    <span class="custom-radio">D</span>
+                    <span id="opt-d-text">Option D</span>
+                </label>
+            </div>
+
+            <button id="next-btn" class="btn" disabled>Next Question</button>
+        </div>
+
+        <div id="thanks-screen" class="screen">
+            <h1>Quiz Completed!</h1>
+            <p>Your score has been tallied successfully.</p>
+            <div class="score-display">
+                Score: <span id="final-score">0</span> / <span id="final-total">21</span> Points
+            </div>
+            <button id="review-btn" class="btn">Review Detailed Answers</button>
+            <button id="restart-btn" class="btn btn-secondary">Home Page</button>
+        </div>
+
+        <div id="review-screen" class="screen">
+            <h1>Verification</h1>
+            <p>Review your submissions below. Green marks correct choices, while red highlights mistakes.</p>
+            
+            <div class="review-scroll-area" id="review-container"></div>
+            
+            <button id="review-back-btn" class="btn">Back to Results</button>
+        </div>
+
+    </div>
+
+    <script>
+        // --- 21 REAL WEB DEVELOPMENT QUESTIONS ---
+        const quizData = [
+            { question: "Which agency regulates and enforces the rules for the Amateur Radio Service in the United States?", a: "FEMA", b: "Homeland Security", c: "The FCC", d: "All these choices are correct", correct: "c" },
+            { question: "Which of the following is part of the Basis and Purpose of the Amateur Radio Service?", a: "Providing personal radio communications for as many citizens as possible", b: "Providing communications for international non-profit organizations", c: "Advancing skills in the technical and communication phases of theradio art", d: "All these choices are correct", correct: "c" },
+            { question: "How many operator/primary station license grants may be held by anyone?", a: "One", b: "More than two", c: "One for each band on which the person plans to operate", d: "One for each permanent station location from which the person plansto operate", correct: "a" },
+            { question: "Which of the following can result in revocation of the station license or suspension of the operator license?", a: "Failure to inform the FCC of any changes in the amateur station following performance of an RF safety environmental evaluation", b: "Failure to provide and maintain a correct email address with the FCC", c: "Failure to obtain FCC type acceptance prior to using a home-built transmitter", d: "Failure to have a copy of your license available at your station", correct: "b" },
+            { question: "Which license classes are new licenses currently available from the FCC?", a: "Technician", b: "General", c: "Extra", d: "All these choices are correct", correct: "d" },
+            { question: "What proves that the FCC has issued an operator/primary license grant?", a: "A printed copy of the certificate of successful completion of examination", b: "An email notification from the NCVEC granting the license", c: "The license appears in the FCC ULS database", d: "All these choices are correct", correct: "c" },
+            { question: "How soon after passing the examination for your first amateur radio license may you transmit on the amateur radio bands?", a: "Immediately on receiving your Certificate of Successful Completion of Examination (CSCE)", b: "As soon as your operator/station license grant appears on the ARRL website", c: "As soon as your operator/station license grant appears in the FCC’s license database", d: "As soon as you receive your license in the mail from the FCC", correct: "c" },
+            { question: "What is the normal term for an FCC-issued amateur radio license?", a: "Five years", b: "Life", c: "Ten years", d: " Eight years", correct: "c" },
+            { question: "What is the grace period for renewal if an amateur license expires?", a: "Two years", b: "Three years", c: "Five years", d: "Ten years", correct: "a" },
+            { question: "If your license has expired and is still within the allowable grace period, may you continue to transmit on the amateur radio bands?", a: "Yes, for up to two years", b: "Yes, as soon as you apply for renewal", c: "Yes, for up to one year", d: "No, you must wait until the license has been renewed", correct: "d" },
+            { question: "Which of the following frequency ranges are available for phone operation by Technician licensees?", a: "28.050 MHz to 28.060 MHz", b: "28.100 MHz to 28.300 MHz", c: "28.300 MHz to 28.500 MHz", d: "28.500 MHz to 28.600 MHz", correct: "d" },
+            { question: "Which frequency is in the 6 meter amateur band?", a: "49.00 MHz", b: "52.525 MHz", c: "28.50 MHz", d: "222.15 MHz", correct: "b" },
+            { question: "Which amateur band includes 146.52 MHz?", a: "6 meters", b: "20 meters", c: "70 centimeters", d: "2 meters", correct: "d" },
+            { question: "Which HF bands does a Technician class operator have phone privileges?", a: "None", b: "10 meter band only", c: "80 meter, 40 meter, 15 meter, and 10 meter bands", d: "30 meter band only", correct: "b" },
+            { question: "Which of the following VHF/UHF band segments are limited to CW only?", a: "50.0 MHz to 50.1 MHz and 144.0 MHz to 144.1 MHz", b: "219 MHz to 220 MHz and 420.0 MHz to 420.1 MHz", c: "902.0 MHz to 902.1 MHz", d: "All these choices are correct", correct: "a" },
+            { question: "What is the maximum peak envelope power output for Technician class operators in their HF band segments?", a: "200 watts", b: "100 watts", c: "50 watts", d: "10 watts", correct: "b" },
+            { question: "Who selects a Frequency Coordinator?", a: "The FCC Office of Spectrum Management and Coordination Policy", b: "The local chapter of the Office of National Council of Independent Frequency Coordinators", c: "Amateur operators in a local or regional area whose stations are eligible to be repeater or auxiliary stations", d: "FCC Regional Field Office", correct: "c" },
+            { question: "How are US amateurs restricted in segments of bands where the Amateur Radio Service is secondary?", a: "U.S. amateurs may find non-amateur stations in those segments, and must avoid interfering with them", b: "U.S. amateurs must give foreign amateur stations priority in those segments", c: "International communications are not permitted in those segments", d: "Digital transmissions are not permitted in those segments", correct: "a" },
+            { question: "Which countries are FCC-licensed amateur radio stations prohibited from exchanging communications?", a: "Any country whose administration has notified the International Telecommunication Union (ITU) that it objects to such communications", b: "Any country whose administration has notified the American Radio Relay League (ARRL) that it objects to such communications", c: "Any country banned from such communications by the International Amateur Radio Union (IARU)", d: "Any country banned from making such communications by the American Radio Relay League (ARRL)", correct: "a" },
+            { question: "Who may select a desired call sign under the vanity call sign rules?", a: "Only a licensed amateur with a General or Amateur Extra Class license", b: "Only a licensed amateur with an Amateur Extra Class license", c: "Only a licensed amateur who has been licensed continuously for more than 10 years", d: "Any licensed amateur", correct: "d" },
+            { question: "Which of the following is a valid Technician class call sign format?", a: "KF1XXX", b: "KA1X", c: "W1XX", d: "All these choices are correct", correct: "a" }
+        ];
+
+        // --- DOM ELEMENTS ---
+        const welcomeScreen = document.getElementById('welcome-screen');
+        const quizScreen = document.getElementById('quiz-screen');
+        const thanksScreen = document.getElementById('thanks-screen');
+        const reviewScreen = document.getElementById('review-screen');
+        
+        const startBtn = document.getElementById('start-btn');
+        const nextBtn = document.getElementById('next-btn');
+        const restartBtn = document.getElementById('restart-btn');
+        const reviewBtn = document.getElementById('review-btn');
+        const reviewBackBtn = document.getElementById('review-back-btn');
+        
+        const questionText = document.getElementById('question-text');
+        const optAText = document.getElementById('opt-a-text');
+        const optBText = document.getElementById('opt-b-text');
+        const optCText = document.getElementById('opt-c-text');
+        const optDText = document.getElementById('opt-d-text');
+        
+        const currentQuestionNum = document.getElementById('current-question-num');
+        const totalQuestionsNum = document.getElementById('total-questions-num');
+        const finalScore = document.getElementById('final-score');
+        const finalTotal = document.getElementById('final-total');
+        
+        const options = document.querySelectorAll('input[name="quiz-option"]');
+        const optionLabels = document.querySelectorAll('.option-label');
+        const reviewContainer = document.getElementById('review-container');
+
+        // --- STATE VARIABLES ---
+        let currentQuestionIndex = 0;
+        let score = 0;
+        let studentAnswers = []; 
+
+        // --- FUNCTIONS ---
+        function initQuiz() {
+            currentQuestionIndex = 0;
+            score = 0;
+            studentAnswers = [];
+            totalQuestionsNum.textContent = quizData.length;
+            finalTotal.textContent = quizData.length;
+            showScreen(welcomeScreen);
+        }
+
+        function showScreen(screenToShow) {
+            document.querySelectorAll('.screen').forEach(screen => {
+                screen.classList.remove('active');
+            });
+            screenToShow.classList.add('active');
+        }
+
+        function loadQuestion() {
+            optionLabels.forEach(lbl => {
+                lbl.classList.remove('correct-glow', 'wrong-glow', 'disabled');
+            });
+            options.forEach(option => {
+                option.checked = false;
+                option.disabled = false;
+            });
+            nextBtn.disabled = true;
+
+            const currentQuiz = quizData[currentQuestionIndex];
+            
+            currentQuestionNum.textContent = currentQuestionIndex + 1;
+            questionText.textContent = currentQuiz.question;
+            optAText.textContent = currentQuiz.a;
+            optBText.textContent = currentQuiz.b;
+            optCText.textContent = currentQuiz.c;
+            optDText.textContent = currentQuiz.d;
+        }
+
+        function handleSelection(e) {
+            const selectedRadio = e.currentTarget.querySelector('input[name="quiz-option"]');
+            if (selectedRadio.disabled) return; 
+
+            const selectedAnswer = selectedRadio.value;
+            const correctAnswer = quizData[currentQuestionIndex].correct;
+
+            options.forEach(opt => opt.disabled = true);
+            optionLabels.forEach(lbl => lbl.classList.add('disabled'));
+
+            optionLabels.forEach(lbl => {
+                const radioValue = lbl.querySelector('input').value;
+                
+                if (radioValue === correctAnswer) {
+                    lbl.classList.add('correct-glow');
+                }
+                
+                if (radioValue === selectedAnswer && selectedAnswer !== correctAnswer) {
+                    lbl.classList.add('wrong-glow');
+                }
+            });
+
+            if (selectedAnswer === correctAnswer) {
+                score++;
+            }
+            studentAnswers.push(selectedAnswer);
+
+            selectedRadio.checked = true;
+            nextBtn.disabled = false;
+        }
+
+        function buildReviewLog() {
+            reviewContainer.innerHTML = ""; 
+            
+            quizData.forEach((q, index) => {
+                const userAns = studentAnswers[index];
+                const correctAns = q.correct;
+                
+                const reviewItem = document.createElement('div');
+                reviewItem.className = 'review-item';
+                
+                let answersHTML = '';
+                ['a', 'b', 'c', 'd'].forEach(key => {
+                    let evaluationClass = '';
+                    
+                    if (key === correctAns) {
+                        evaluationClass = 'review-correct';
+                    } else if (key === userAns && userAns !== correctAns) {
+                        evaluationClass = 'review-wrong';
+                    }
+                    
+                    answersHTML += `
+                        <div class="review-option ${evaluationClass}">
+                            <span class="review-option-badge">${key.toUpperCase()}.</span> ${q[key]}
+                        </div>
+                    `;
+                });
+
+                reviewItem.innerHTML = `
+                    <div class="review-question">Q${index + 1}: ${q.question}</div>
+                    <div class="review-options-list">${answersHTML}</div>
+                `;
+                
+                reviewContainer.appendChild(reviewItem);
+            });
+        }
+
+        // --- EVENT LISTENERS ---
+        startBtn.addEventListener('click', () => {
+            showScreen(quizScreen);
+            loadQuestion();
+        });
+
+        optionLabels.forEach(label => {
+            label.addEventListener('click', handleSelection);
+        });
+
+        nextBtn.addEventListener('click', () => {
+            currentQuestionIndex++;
+
+            if (currentQuestionIndex < quizData.length) {
+                loadQuestion();
+            } else {
+                finalScore.textContent = score;
+                showScreen(thanksScreen);
+            }
+        });
+
+        reviewBtn.addEventListener('click', () => {
+            buildReviewLog();
+            showScreen(reviewScreen);
+        });
+
+        reviewBackBtn.addEventListener('click', () => {
+            showScreen(thanksScreen);
+        });
+
+        restartBtn.addEventListener('click', () => {
+            initQuiz();
+        });
+
+        initQuiz();
+    </script>
+</body>
+</html>
